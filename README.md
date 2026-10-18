@@ -1,56 +1,134 @@
-# Customer Spend Insights & Event Collection Platform
+# Spending Insight
 
-Local, production-shaped PoC for ingesting customer spend/interaction events and exploring analytics-ready spend trends.
+A full-stack spend analytics platform for capturing customer purchase and interaction events, persisting them securely, and visualizing spend trends through a modern dashboard.
 
-**Stack:** Java 21 � Spring Boot � React � PostgreSQL � JWT � Docker � OpenAPI � JUnit
+Built for local development with a production-shaped architecture: JWT-secured APIs, PostgreSQL persistence, OpenAPI documentation, automated tests, and one-command Docker Compose deployment.
 
-## What you get
+---
 
-- JWT-secured Spring Boot REST APIs (`register` / `login`, event create/query, spend-summary analytics)
-- React dashboard for event ingestion and spend-trend charts
-- PostgreSQL persistence with Flyway migrations
-- OpenAPI/Swagger UI
-- JUnit + Testcontainers integration coverage
-- Docker Compose packaging for one-command local run
+## Overview
 
-## Quick start (Docker)
+**Spending Insight** helps you:
 
-Build artifacts on the host, then package with Compose:
+- Register and authenticate users with JWT-based security
+- Ingest spend and interaction events (purchases, refunds, subscriptions, and more)
+- Query event history with filtering and pagination
+- Explore analytics — daily net spend trends and category breakdowns — in a React dashboard
 
-```bash
-cd spend-insights
-make up
-# equivalent:
-#   cd backend && ./gradlew bootJar -x test
-#   cd frontend && npm ci && npm run build
-#   docker compose up --build -d
+Ideal as a portfolio project or a starting point for customer spend / fintech-style analytics services.
+
+---
+
+## Tech Stack
+
+| Layer | Technologies |
+|-------|----------------|
+| **Backend** | Java 21, Spring Boot, Spring Security, JWT, Flyway, Hibernate/JPA |
+| **Frontend** | React, Vite, Recharts |
+| **Database** | PostgreSQL 16 |
+| **API docs** | OpenAPI 3 / Swagger UI |
+| **Testing** | JUnit, Testcontainers |
+| **Ops** | Docker, Docker Compose, Actuator health checks |
+
+---
+
+## Features
+
+- **Authentication** — Register / login with BCrypt password hashing and stateless JWT
+- **Event ingestion** — Create and query spend/interaction events with validation
+- **Analytics** — Spend summary with trend points and category breakdown
+- **Dashboard** — Seed sample data, browse events, and view charts
+- **Schema management** — Flyway migrations with `ddl-auto: validate`
+- **API explorer** — Swagger UI for interactive endpoint testing
+- **Containerized run** — Full stack (API + UI + Postgres) via Compose
+
+---
+
+## Architecture
+
+```text
+┌─────────────────┐     JWT + REST      ┌──────────────────────┐
+│  React Dashboard│ ──────────────────► │  Spring Boot API     │
+│  (nginx :3000)  │                     │  (:8080)             │
+└─────────────────┘                     │  Auth · Events ·     │
+                                        │  Analytics           │
+                                        └──────────┬───────────┘
+                                                   │ JDBC
+                                                   ▼
+                                        ┌──────────────────────┐
+                                        │  PostgreSQL 16       │
+                                        └──────────────────────┘
 ```
 
-| Service   | URL |
-|-----------|-----|
-| Dashboard | http://localhost:3000 |
-| API       | http://localhost:8080 |
-| Swagger   | http://localhost:8080/swagger-ui.html |
-| Health    | http://localhost:8080/actuator/health |
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Docker and Docker Compose (Docker Desktop or OrbStack)
+- For local (non-Docker) development: Java 21, Node.js 20+, and Gradle wrapper (included)
+
+### Run with Docker
+
+```bash
+git clone <your-repo-url>
+cd spend-insights   # or your cloned folder name
+
+cp .env.example .env   # optional; defaults work for local use
+
+make up
+```
+
+This builds the backend JAR and frontend assets, then starts Postgres, the API, and the dashboard.
+
+| Service | URL |
+|---------|-----|
+| **Dashboard** | http://localhost:3000 |
+| **API** | http://localhost:8080 |
+| **Swagger UI** | http://localhost:8080/swagger-ui.html |
+| **Health** | http://localhost:8080/actuator/health |
+
+**First-time walkthrough**
 
 1. Open the dashboard and create an account.
-2. Click **Seed sample events** (or ingest manually).
-3. Review daily net spend and category breakdown.
+2. Click **Seed sample events** (or ingest events manually).
+3. Review daily net spend and the category breakdown.
 
-Stop with `docker compose down`. Add `-v` to also drop the Postgres volume.
+**Stop the stack**
 
-## API overview
+```bash
+make down
+# or: docker compose down
+# add -v to also remove the Postgres volume
+```
 
-| Method | Path | Auth | Purpose |
-|--------|------|------|---------|
-| `POST` | `/api/v1/auth/register` | No | Create account + JWT |
-| `POST` | `/api/v1/auth/login` | No | Login + JWT |
-| `POST` | `/api/v1/events` | Bearer | Ingest spend/interaction event |
-| `GET` | `/api/v1/events` | Bearer | Query events (`customerId`, paging) |
-| `GET` | `/api/v1/events/{id}` | Bearer | Fetch one event |
+**Logs**
+
+```bash
+make logs
+```
+
+---
+
+## API Reference
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/v1/auth/register` | Public | Create account and receive JWT |
+| `POST` | `/api/v1/auth/login` | Public | Login and receive JWT |
+| `POST` | `/api/v1/events` | Bearer | Ingest a spend/interaction event |
+| `GET` | `/api/v1/events` | Bearer | List events (`customerId`, paging) |
+| `GET` | `/api/v1/events/{id}` | Bearer | Fetch a single event |
 | `GET` | `/api/v1/analytics/spend-summary` | Bearer | Trends + category breakdown |
 
-Example ingest payload:
+### Example: ingest an event
+
+```http
+POST /api/v1/events
+Authorization: Bearer <token>
+Content-Type: application/json
+```
 
 ```json
 {
@@ -66,30 +144,34 @@ Example ingest payload:
 }
 ```
 
-`eventType` values: `PURCHASE`, `REFUND`, `INTERACTION`, `SUBSCRIPTION`.
+**Supported `eventType` values:** `PURCHASE`, `REFUND`, `INTERACTION`, `SUBSCRIPTION`
 
-## Local development (without full Compose)
+---
 
-### Database
+## Local Development (without full Compose)
+
+### 1. Database only
 
 ```bash
 docker compose up -d db
 ```
 
-### Backend
+### 2. Backend
 
 ```bash
 cd backend
 ./gradlew bootRun
 ```
 
-Defaults (see `src/main/resources/application.yml`):
+Defaults (see `backend/src/main/resources/application.yml`):
 
-- JDBC: `jdbc:postgresql://localhost:5432/spend_insights`
-- User/pass: `spend` / `spend_secret`
-- JWT secret via `JWT_SECRET` (override for anything beyond local use)
+| Setting | Default |
+|---------|---------|
+| JDBC URL | `jdbc:postgresql://localhost:5432/spend_insights` |
+| Username / password | `spend` / `spend_secret` |
+| JWT | Override with `JWT_SECRET` for anything beyond local use |
 
-### Frontend
+### 3. Frontend
 
 ```bash
 cd frontend
@@ -97,34 +179,59 @@ npm install
 npm run dev
 ```
 
-Vite proxies `/api` to `http://localhost:8080`. App: http://localhost:5173
+Vite serves the app at http://localhost:5173 and proxies `/api` to `http://localhost:8080`.
 
-## Tests
+---
 
-Requires Docker (Testcontainers pulls Postgres):
+## Testing
+
+Backend tests use Testcontainers (Docker required for Postgres):
 
 ```bash
 cd backend
 ./gradlew test
 ```
 
-## Project layout
+---
 
-```
+## Project Structure
+
+```text
 spend-insights/
-??? backend/          Spring Boot API, Flyway, JWT, tests
-??? frontend/         React (Vite) dashboard
-??? docker-compose.yml
-??? README.md
+├── backend/                 # Spring Boot API, Flyway, JWT, tests
+│   ├── src/main/java/...
+│   └── src/test/java/...
+├── frontend/                # React (Vite) dashboard
+│   └── src/
+├── docker-compose.yml
+├── Makefile
+├── .env.example
+└── README.md
 ```
 
-## Production-minded local defaults
+---
 
-- Stateless JWT security, BCrypt password hashing, CORS allow-list
-- Flyway-owned schema (`ddl-auto: validate`)
-- HikariCP pooling, Actuator health/info/metrics
-- Structured API error responses + Bean Validation
-- Multi-stage Docker images (JDK build ? JRE runtime; Node build ? nginx)
-- Non-root backend container user, healthchecks on all services
+## Configuration
 
-This is intended for **local** use. Change `JWT_SECRET` and DB credentials before any shared deployment.
+Copy `.env.example` to `.env` to override Compose defaults:
+
+| Variable | Purpose |
+|----------|---------|
+| `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | Database credentials |
+| `JWT_SECRET` | Signing key (use a long random secret outside local demos) |
+| `JWT_EXPIRATION_MS` | Token lifetime |
+| `CORS_ALLOWED_ORIGINS` | Allowed frontend origins |
+
+---
+
+## Security Notes
+
+- Passwords are hashed with BCrypt; APIs are protected with JWT (except auth endpoints).
+- CORS is allow-listed; Actuator exposes health for orchestration.
+- Defaults are for **local development only**. Change `JWT_SECRET` and database credentials before any shared or production deployment.
+
+---
+
+## License
+
+This project is provided for educational and portfolio use. Add a license file if you publish it under an open-source license (e.g. MIT).

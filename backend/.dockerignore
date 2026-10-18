@@ -1,0 +1,13 @@
+.gradle
+.idea
+*.iml
+.DS_Store
+out
+bin
+src
+gradle
+gradlew
+gradlew.bat
+build.gradle
+settings.gradle
+!build/libs/*.jar
